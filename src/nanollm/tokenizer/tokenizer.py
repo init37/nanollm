@@ -35,12 +35,80 @@ class BytePairTokenizer(ByteTokenizer):
         self, freq_table: dict[tuple[bytes, ...], int]
     ) -> list[tuple[bytes, bytes]]:
         merges = []
+        map_pretoken = {key: key for key in freq_table}
+        pair_freq_table = {}
+        for key in freq_table:
+            for i in range(len(key) - 1):
+                pair = (key[i], key[i + 1])
+                if pair in pair_freq_table:
+                    pair_freq_table[pair][key] = pair_freq_table[pair].get(key, 0) + 1
+                else:
+                    pair_freq_table[pair] = {key: 1}
         while len(self.vocab) < self.vocab_size:
-            pair_freq_table = {}
-            for key, value in freq_table.items():
-                for i in range(len(key) - 1):
-                    pair = (key[i], key[i + 1])
-                    pair_freq_table[pair] = pair_freq_table.get(pair, 0) + value
-            print(pair_freq_table)
-
+            max_pair = None
+            for pair, pretokens in pair_freq_table.items():
+                value = sum(
+                    freq_table[pretoken] * mult for pretoken, mult in pretokens.items()
+                )
+                if max_pair == None:
+                    max_pair = (pair, value)
+                else:
+                    if max_pair[1] < value:
+                        max_pair = (pair, value)
+                    if max_pair[1] == value and max_pair[0] > pair:
+                        max_pair = (pair, value)
+            if max_pair is None:
+                break
+            self.vocab[len(self.vocab)] = (
+                self.vocab[max_pair[0][0]] + self.vocab[max_pair[0][1]]
+            )
+            merges.append((self.vocab[max_pair[0][0]], self.vocab[max_pair[0][1]]))
+            for p in pair_freq_table[max_pair[0]]:
+                pretoken = map_pretoken[p]
+                i = 0
+                while i < len(pretoken) - 1:
+                    if (
+                        max_pair[0][0] == pretoken[i]
+                        and max_pair[0][1] == pretoken[i + 1]
+                    ):
+                        if i > 0:
+                            temp = (pretoken[i - 1], pretoken[i])
+                            if temp in pair_freq_table and p in pair_freq_table[temp]:
+                                pair_freq_table[temp][p] -= 1
+                                if pair_freq_table[temp][p] == 0:
+                                    del pair_freq_table[temp][p]
+                        if i + 2 < len(pretoken):
+                            temp = (pretoken[i + 1], pretoken[i + 2])
+                            if temp in pair_freq_table and p in pair_freq_table[temp]:
+                                pair_freq_table[temp][p] -= 1
+                                if pair_freq_table[temp][p] == 0:
+                                    del pair_freq_table[temp][p]
+                        merged = (
+                            *pretoken[:i],
+                            self.vocab[len(self.vocab) - 1],
+                            *pretoken[i + 2 :],
+                        )
+                        map_pretoken[p] = merged
+                        pretoken = merged
+                        if pretoken[i] == len(self.vocab) - 1:
+                            if i > 0:
+                                temp = (pretoken[i - 1], pretoken[i])
+                                if temp in pair_freq_table:
+                                    pair_freq_table[temp][p] = (
+                                        pair_freq_table[temp].get(p, 0) + 1
+                                    )
+                                else:
+                                    pair_freq_table[temp] = {p: 1}
+                            if i + 1 < len(pretoken):
+                                temp = (pretoken[i], pretoken[i + 1])
+                                if temp in pair_freq_table:
+                                    pair_freq_table[temp][p] = (
+                                        pair_freq_table[temp].get(p, 0) + 1
+                                    )
+                                else:
+                                    pair_freq_table[temp] = {p: 1}
+                    else:
+                        i += 1
+                i = 0
+            del pair_freq_table[pair]
         return merges
