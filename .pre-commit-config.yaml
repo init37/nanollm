@@ -45,4 +45,3 @@ repos:
         entry: uv run detect-secrets-hook
         language: system
         types: [text]
-      
