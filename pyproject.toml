@@ -1,0 +1,45 @@
+[project]
+name = "nanollm"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "init", email = "jckobkz@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "jupyter>=1.1.1",
+    "torch>=2.14.0",
+    "torchaudio>=2.11.0",
+    "torchvision>=0.29.0",
+    "einops>=0.8",
+    "einx>=0.4",
+    "jaxtyping>=0.3",
+    "numpy>=2.4",
+    "psutil>=7",
+    "regex>=2026.3.32",
+    "tiktoken>=0.12.0",
+    "tqdm>=4.67",
+    "wandb>=0.25",
+    "detect-secrets>=1.5.0",
+]
+
+[project.scripts]
+nanollm = "nanollm:main"
+
+[build-system]
+requires = ["uv_build>=0.12.20,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.26",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.16.0",
+    "ruff>=0.16.9",
+    "pytest-timeout",
+    "bandit>=1.9.4",
+]
