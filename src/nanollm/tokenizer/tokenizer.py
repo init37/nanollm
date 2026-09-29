@@ -50,7 +50,7 @@ class BytePairTokenizer(ByteTokenizer):
                 value = sum(
                     freq_table[pretoken] * mult for pretoken, mult in pretokens.items()
                 )
-                if max_pair == None:
+                if max_pair is None:
                     max_pair = (pair, value)
                 else:
                     if max_pair[1] < value:
@@ -63,7 +63,7 @@ class BytePairTokenizer(ByteTokenizer):
                 self.vocab[max_pair[0][0]] + self.vocab[max_pair[0][1]]
             )
             merges.append((self.vocab[max_pair[0][0]], self.vocab[max_pair[0][1]]))
-            for p in pair_freq_table[max_pair[0]]:
+            for p in list(pair_freq_table[max_pair[0]]):
                 pretoken = map_pretoken[p]
                 i = 0
                 while i < len(pretoken) - 1:
@@ -83,14 +83,15 @@ class BytePairTokenizer(ByteTokenizer):
                                 pair_freq_table[temp][p] -= 1
                                 if pair_freq_table[temp][p] == 0:
                                     del pair_freq_table[temp][p]
+                        new_token = self.vocab[len(self.vocab) - 1]
                         merged = (
                             *pretoken[:i],
-                            self.vocab[len(self.vocab) - 1],
+                            new_token,
                             *pretoken[i + 2 :],
                         )
                         map_pretoken[p] = merged
                         pretoken = merged
-                        if pretoken[i] == len(self.vocab) - 1:
+                        if pretoken[i] == new_token:
                             if i > 0:
                                 temp = (pretoken[i - 1], pretoken[i])
                                 if temp in pair_freq_table:
