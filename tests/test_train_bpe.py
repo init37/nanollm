@@ -16,7 +16,6 @@ def test_train_bpe_speed():
 
 
 def test_train_bpe():
-    return
     input_path = DATA_PATH / "corpus.en"
     vocab, merges = run_train_bpe(
         input_path=input_path,
@@ -35,7 +34,11 @@ def test_train_bpe():
             )
             for merge_token_1, merge_token_2 in gpt2_reference_merges
         ]
-    print(merges, reference_merges)
+    """
+    for i, (merge, ref) in enumerate(zip(merges, reference_merges)):
+        if merge != ref:
+            print(f"{i}: {merge} != {ref}")
+    """
     assert merges == reference_merges
     with open(reference_vocab_path, encoding="utf-8") as f:
         gpt2_reference_vocab = json.load(f)
