@@ -21,6 +21,8 @@ class GPTPreTokenizer(BytePreTokenizer):
         with open(self.input_path) as file:
             while line := file.readline():
                 for chunk in re.finditer(self.PAT, line):
-                    pretoken = tuple(chunk.group().encode("utf-8"))
+                    pretoken = tuple(
+                        bytes([byte]) for byte in chunk.group().encode("utf-8")
+                    )
                     freq_table[pretoken] = freq_table.get(pretoken, 0) + 1
         return freq_table
