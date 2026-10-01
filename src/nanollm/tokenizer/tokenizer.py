@@ -91,25 +91,23 @@ class BytePairTokenizer(ByteTokenizer):
                         )
                         map_pretoken[p] = merged
                         pretoken = merged
-                        if pretoken[i] == new_token:
-                            if i > 0:
-                                temp = (pretoken[i - 1], pretoken[i])
-                                if temp in pair_freq_table:
-                                    pair_freq_table[temp][p] = (
-                                        pair_freq_table[temp].get(p, 0) + 1
-                                    )
-                                else:
-                                    pair_freq_table[temp] = {p: 1}
-                            if i + 1 < len(pretoken):
-                                temp = (pretoken[i], pretoken[i + 1])
-                                if temp in pair_freq_table:
-                                    pair_freq_table[temp][p] = (
-                                        pair_freq_table[temp].get(p, 0) + 1
-                                    )
-                                else:
-                                    pair_freq_table[temp] = {p: 1}
-                    else:
-                        i += 1
+                        if i > 0:
+                            temp = (pretoken[i - 1], pretoken[i])
+                            if temp in pair_freq_table:
+                                pair_freq_table[temp][p] = (
+                                    pair_freq_table[temp].get(p, 0) + 1
+                                )
+                            else:
+                                pair_freq_table[temp] = {p: 1}
+                        if i + 1 < len(pretoken):
+                            temp = (pretoken[i], pretoken[i + 1])
+                            if temp in pair_freq_table:
+                                pair_freq_table[temp][p] = (
+                                    pair_freq_table[temp].get(p, 0) + 1
+                                )
+                            else:
+                                pair_freq_table[temp] = {p: 1}
+                    i += 1
                 i = 0
             del pair_freq_table[pair]
         return merges
