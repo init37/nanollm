@@ -53,7 +53,7 @@ class BytePairTokenizer(ByteTokenizer):
                 else:
                     if max_pair[1] < value:
                         max_pair = (pair, value)
-                    if max_pair[1] == value and max_pair[0] > pair:
+                    if max_pair[1] == value and max_pair[0] < pair:
                         max_pair = (pair, value)
             if max_pair is None:
                 break
