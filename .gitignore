@@ -7,7 +7,6 @@ wheels/
 *.egg-info
 /.mypy_cache
 notebooks/
-data/
 
 # Virtual environments
 .venv
