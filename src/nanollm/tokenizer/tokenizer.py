@@ -15,10 +15,7 @@ class ByteTokenizer(ABC):
 
 
 class BytePairTokenizer(ByteTokenizer):
-    def __init__(
-        self, input_path: str, vocab_size: int, special_tokens: list[str]
-    ) -> None:
-        self.input_path = input_path
+    def __init__(self, vocab_size: int, special_tokens: list[str]) -> None:
         self.vocab_size = vocab_size
         self.vocab = {i: bytes([i]) for i in range(256)}
         for i, special_token in enumerate(special_tokens):

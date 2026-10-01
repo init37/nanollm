@@ -1,17 +1,18 @@
+import os
 from abc import ABC, abstractmethod
 
 import regex as re
 
 
 class BytePreTokenizer(ABC):
-    input_path: str
+    input_path: str | os.PathLike
 
     @abstractmethod
     def pre_tokenize(self) -> dict[tuple[bytes, ...], int]: ...
 
 
 class GPTPreTokenizer(BytePreTokenizer):
-    def __init__(self, input_path: str) -> None:
+    def __init__(self, input_path: str | os.PathLike) -> None:
         self.input_path = input_path
         self.PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
