@@ -6,7 +6,6 @@ from common import DATA_PATH, gpt2_bytes_to_unicode
 
 
 def test_train_bpe_speed():
-    return
     input_path = DATA_PATH / "corpus.en"
     start_time = time.time()
     _, _ = run_train_bpe(
