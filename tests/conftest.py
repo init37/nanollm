@@ -12,7 +12,7 @@ class DEFAULT:
     pass
 
 
-def _canonicalize_array[A: (np.ndarray, Tensor)](arr: A) -> np.ndarray:
+def _canonicalize_array(arr: np.ndarray | Tensor) -> np.ndarray:
     if isinstance(arr, Tensor):
         arr = arr.detach().cpu().numpy()
     return arr
@@ -58,13 +58,16 @@ class NumpySnapshot[A: (np.ndarray, Tensor)]:
             force_update = self.default_force_update
         if self.always_match_exact:
             rtol = atol = 0
-        if test_name is DEFAULT:
+        if isinstance(test_name, str):
+            resolved_test_name = test_name
+        else:
+            assert test_name is DEFAULT
             assert self.default_test_name is not None, (
                 "Test name must be provided or set as default"
             )
-            test_name = self.default_test_name
+            resolved_test_name = self.default_test_name
 
-        snapshot_path = self._get_snapshot_path(test_name)
+        snapshot_path = self._get_snapshot_path(resolved_test_name)
 
         # Convert single array to dictionary for consistent handling
         arrays_dict = actual if isinstance(actual, dict) else {"array": actual}
@@ -132,13 +135,16 @@ class Snapshot[A: (np.ndarray, Tensor)]:
 
         if force_update is DEFAULT:
             force_update = self.default_force_update
-        if test_name is DEFAULT:
+        if isinstance(test_name, str):
+            resolved_test_name = test_name
+        else:
+            assert test_name is DEFAULT
             assert self.default_test_name is not None, (
                 "Test name must be provided or set as default"
             )
-            test_name = self.default_test_name
+            resolved_test_name = self.default_test_name
 
-        snapshot_path = self._get_snapshot_path(test_name)
+        snapshot_path = self._get_snapshot_path(resolved_test_name)
 
         # Load the snapshot
         with open(snapshot_path, "rb") as f:
@@ -205,7 +211,7 @@ def numpy_snapshot(request):
 
 
 @pytest.fixture
-def ts_state_dict(request):
+def ts_state_dict():
     import json
 
     from .common import DATA_PATH

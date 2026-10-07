@@ -8,7 +8,9 @@ class BytePreTokenizer(ABC):
     input_path: str | os.PathLike
 
     @abstractmethod
-    def pre_tokenize(self) -> dict[tuple[bytes, ...], int]: ...
+    def pre_tokenize(
+        self, special_tokens: list[str]
+    ) -> dict[tuple[bytes, ...], int]: ...
 
 
 class GPTPreTokenizer(BytePreTokenizer):
@@ -16,10 +18,12 @@ class GPTPreTokenizer(BytePreTokenizer):
         self.input_path = input_path
         self.PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
-    def pre_tokenize(self) -> dict[tuple[bytes, ...], int]:
+    def pre_tokenize(self, special_tokens: list[str]) -> dict[tuple[bytes, ...], int]:
         freq_table = {}
         with open(self.input_path) as file:
             while line := file.readline():
+                for special in special_tokens:
+                    line = line.replace(special, "")
                 for chunk in re.finditer(self.PAT, line):
                     pretoken = tuple(
                         bytes([byte]) for byte in chunk.group().encode("utf-8")

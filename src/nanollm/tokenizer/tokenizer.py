@@ -18,13 +18,14 @@ class BytePairTokenizer(ByteTokenizer):
     def __init__(self, vocab_size: int, special_tokens: list[str]) -> None:
         self.vocab_size = vocab_size
         self.vocab = {i: bytes([i]) for i in range(256)}
+        self.special_tokens = special_tokens
         for i, special_token in enumerate(special_tokens):
             self.vocab[256 + i] = special_token.encode("utf-8")
 
     def train(
         self, pretokenizer: BytePreTokenizer
     ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
-        freq_table = pretokenizer.pre_tokenize()
+        freq_table = pretokenizer.pre_tokenize(self.special_tokens)
         merges = self.merge(freq_table)
         return self.vocab, merges
 

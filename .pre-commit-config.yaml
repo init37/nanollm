@@ -17,21 +17,21 @@ repos:
         name: ruff
         entry: uv run ruff check
         language: system
-        exclude: ^tests/
         types: [python]
+        exclude: ^tests/
       - id: ruff-format
         name: ruff format
         entry: uv run ruff format --check
         language: system
-        exclude: ^tests/
         types: [python]
+        exclude: ^tests/
       - id: ty
         name: ty
         entry: uv run ty check
-        exclude: ^tests/
         language: system
         pass_filenames: false
         types: [python]
+        exclude: ^tests/
       - id: pytest
         name: pytest
         entry: uv run pytest tests/

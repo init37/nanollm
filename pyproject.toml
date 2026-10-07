@@ -33,6 +33,9 @@ build-backend = "uv_build"
 [tool.ruff]
 extend-include = ["*.ipynb"]
 
+[tool.pyright]
+exclude = ["tests"]
+
 [dependency-groups]
 dev = [
     "ty>=0.0.26",
