@@ -54,7 +54,7 @@ def test_train_bpe():
 
 def test_train_bpe_special_tokens(snapshot):
     input_path = DATA_PATH / "tinystories_sample_5M.txt"
-    vocab, merges = run_train_bpe(
+    vocab, _ = run_train_bpe(
         input_path=input_path, vocab_size=1000, special_tokens=["<|endoftext|>"]
     )
     vocabs_without_specials = [

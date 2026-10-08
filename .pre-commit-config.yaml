@@ -18,20 +18,17 @@ repos:
         entry: uv run ruff check
         language: system
         types: [python]
-        exclude: ^tests/
       - id: ruff-format
         name: ruff format
         entry: uv run ruff format --check
         language: system
         types: [python]
-        exclude: ^tests/
       - id: ty
         name: ty
         entry: uv run ty check
         language: system
         pass_filenames: false
         types: [python]
-        exclude: ^tests/
       - id: pytest
         name: pytest
         entry: uv run pytest tests/

@@ -48,4 +48,5 @@ dev = [
     "pytest-timeout",
     "bandit>=1.9.4",
     "detect-secrets>=1.5.0",
+    "py-spy>=0.4.2",
 ]
