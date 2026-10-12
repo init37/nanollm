@@ -1,7 +1,7 @@
 import os
 
-from nanollm.tokenizer.pretokenizer import GPTPreTokenizer
 from nanollm.tokenizer.tokenizer import BytePairTokenizer
+from nanollm.tokenizer.train_tokenizer import TokenizerTrainer
 
 
 def run_train_bpe(
@@ -9,6 +9,7 @@ def run_train_bpe(
     vocab_size: int,
     special_tokens: list[str],
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
-    pretokenizer = GPTPreTokenizer(input_path)
+    trainer = TokenizerTrainer(input_path, vocab_size, special_tokens)
+    freq_table = trainer.pretokenize()
     tokenizer = BytePairTokenizer(vocab_size, special_tokens)
-    return tokenizer.train(pretokenizer)
+    return tokenizer.train(freq_table)

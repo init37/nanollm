@@ -40,28 +40,27 @@ def find_chunk_boundaries(
 
 
 class BytePreTokenizer(ABC):
-    input_path: str | os.PathLike
+    chunk: str
+    special_tokens: list[str]
 
     @abstractmethod
-    def pre_tokenize(
-        self, special_tokens: list[str]
-    ) -> dict[tuple[bytes, ...], int]: ...
+    def pre_tokenize(self) -> dict[tuple[bytes, ...], int]: ...
 
 
 class GPTPreTokenizer(BytePreTokenizer):
-    def __init__(self, input_path: str | os.PathLike) -> None:
-        self.input_path = input_path
+    def __init__(self, chunk: str, special_tokens: list[str]) -> None:
+        self.chunk = chunk
+        self.special_tokens = special_tokens
         self.PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
-    def pre_tokenize(self, special_tokens: list[str]) -> dict[tuple[bytes, ...], int]:
+    def pre_tokenize(self) -> dict[tuple[bytes, ...], int]:
         freq_table = {}
-        with open(self.input_path) as file:
-            while line := file.readline():
-                for special in special_tokens:
-                    line = line.replace(special, "")
-                for chunk in re.finditer(self.PAT, line):
-                    pretoken = tuple(
-                        bytes([byte]) for byte in chunk.group().encode("utf-8")
-                    )
-                    freq_table[pretoken] = freq_table.get(pretoken, 0) + 1
+        pattern = "|".join(
+            re.escape(t) for t in sorted(self.special_tokens, key=len, reverse=True)
+        )
+        parts = re.split(pattern, self.chunk) if pattern else [self.chunk]
+        for part in parts:
+            for c in re.finditer(self.PAT, part):
+                pretoken = tuple(bytes([byte]) for byte in c.group().encode("utf-8"))
+                freq_table[pretoken] = freq_table.get(pretoken, 0) + 1
         return freq_table

@@ -2,8 +2,8 @@ import cProfile
 import os
 import pathlib
 
-from nanollm.tokenizer.pretokenizer import GPTPreTokenizer
 from nanollm.tokenizer.tokenizer import BytePairTokenizer
+from nanollm.tokenizer.train_tokenizer import TokenizerTrainer
 
 DATA_PATH = pathlib.Path(__file__).resolve().parent.parent.parent.parent / "data"
 
@@ -13,18 +13,24 @@ def run_train_bpe(
     vocab_size: int,
     special_tokens: list[str],
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
-    pretokenizer = GPTPreTokenizer(input_path)
+    trainer = TokenizerTrainer(input_path, vocab_size, special_tokens, num_processes=8)
+    freq_table = trainer.pretokenize()
     tokenizer = BytePairTokenizer(vocab_size, special_tokens)
-    return tokenizer.train(pretokenizer)
+    return tokenizer.train(freq_table)
 
 
-input_path = DATA_PATH / "corpus.en"
-profiler = cProfile.Profile()
-profiler.enable()
-run_train_bpe(
-    input_path=input_path,
-    vocab_size=500,
-    special_tokens=["<|endoftext|>"],
-)
-profiler.disable()
-profiler.dump_stats("train_bpe.prof")
+def main():
+    input_path = DATA_PATH / "tinystories_sample_5M.txt"
+    profiler = cProfile.Profile()
+    profiler.enable()
+    run_train_bpe(
+        input_path=input_path,
+        vocab_size=500,
+        special_tokens=["<|endoftext|>"],
+    )
+    profiler.disable()
+    profiler.dump_stats("train_bpe.prof")
+
+
+if __name__ == "__main__":
+    main()
