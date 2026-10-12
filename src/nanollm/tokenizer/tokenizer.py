@@ -1,7 +1,6 @@
 import heapq
 from abc import ABC, abstractmethod
 
-from nanollm.tokenizer.pretokenizer import BytePreTokenizer
 from nanollm.tokenizer.reverse_pair import ReversePair
 
 
@@ -11,7 +10,7 @@ class ByteTokenizer(ABC):
 
     @abstractmethod
     def train(
-        self, pretokenizer: BytePreTokenizer
+        self, freq_table: dict[tuple[bytes, ...], int]
     ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]: ...
 
 
@@ -24,9 +23,8 @@ class BytePairTokenizer(ByteTokenizer):
             self.vocab[256 + i] = special_token.encode("utf-8")
 
     def train(
-        self, pretokenizer: BytePreTokenizer
+        self, freq_table: dict[tuple[bytes, ...], int]
     ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
-        freq_table = pretokenizer.pre_tokenize(self.special_tokens)
         merges = self.merge(freq_table)
         return self.vocab, merges
 
