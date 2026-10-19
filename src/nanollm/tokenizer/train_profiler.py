@@ -13,14 +13,14 @@ def run_train_bpe(
     vocab_size: int,
     special_tokens: list[str],
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
-    trainer = TokenizerTrainer(input_path, vocab_size, special_tokens, num_processes=8)
+    trainer = TokenizerTrainer(input_path, vocab_size, special_tokens, num_processes=16)
     freq_table = trainer.pretokenize()
     tokenizer = BytePairTokenizer(vocab_size, special_tokens)
     return tokenizer.train(freq_table)
 
 
 def main():
-    input_path = DATA_PATH / "tinystories_sample_5M.txt"
+    input_path = DATA_PATH / "big" / "TinyStoriesV2-GPT4-train.txt"
     profiler = cProfile.Profile()
     profiler.enable()
     run_train_bpe(

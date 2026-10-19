@@ -53,12 +53,28 @@ def test_train_bpe():
 
 
 def test_train_bpe_special_tokens(snapshot):
+    """
+    Ensure that the special tokens are added to the vocabulary and not
+    merged with other tokens.
+    """
     input_path = DATA_PATH / "tinystories_sample_5M.txt"
-    vocab, _ = run_train_bpe(
-        input_path=input_path, vocab_size=1000, special_tokens=["<|endoftext|>"]
+    vocab, merges = run_train_bpe(
+        input_path=input_path,
+        vocab_size=1000,
+        special_tokens=["<|endoftext|>"],
     )
+
+    # Check that the special token is not in the vocab
     vocabs_without_specials = [
         word for word in vocab.values() if word != b"<|endoftext|>"
     ]
     for word_bytes in vocabs_without_specials:
         assert b"<|" not in word_bytes
+
+    snapshot.assert_match(
+        {
+            "vocab_keys": set(vocab.keys()),
+            "vocab_values": set(vocab.values()),
+            "merges": merges,
+        },
+    )

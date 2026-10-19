@@ -54,13 +54,16 @@ class GPTPreTokenizer(BytePreTokenizer):
         self.PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
     def pre_tokenize(self) -> dict[tuple[bytes, ...], int]:
-        freq_table = {}
+        byte_freq_table: dict[bytes, int] = {}
         pattern = "|".join(
             re.escape(t) for t in sorted(self.special_tokens, key=len, reverse=True)
         )
         parts = re.split(pattern, self.chunk) if pattern else [self.chunk]
         for part in parts:
             for c in re.finditer(self.PAT, part):
-                pretoken = tuple(bytes([byte]) for byte in c.group().encode("utf-8"))
-                freq_table[pretoken] = freq_table.get(pretoken, 0) + 1
-        return freq_table
+                pretoken = c.group().encode("utf-8")
+                byte_freq_table[pretoken] = byte_freq_table.get(pretoken, 0) + 1
+        return {
+            tuple(bytes([byte]) for byte in pretoken): frequency
+            for pretoken, frequency in byte_freq_table.items()
+        }
