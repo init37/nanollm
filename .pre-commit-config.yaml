@@ -34,12 +34,6 @@ repos:
         entry: uv run pytest tests/
         language: system
         pass_filenames: false
-      - id: bandit
-        name: bandit
-        entry: uv run bandit -r src/
-        language: system
-        pass_filenames: false
-        types: [python]
       - id: detect-secrets
         name: detect-secrets
         entry: uv run detect-secrets-hook

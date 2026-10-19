@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import BinaryIO
 
 import regex as re
+from tqdm import tqdm
 
 
 def find_chunk_boundaries(
@@ -28,7 +29,7 @@ def find_chunk_boundaries(
             mini_chunk = file.read(mini_chunk_size)
 
             if mini_chunk == b"":
-                chunk_boundaries[bi] = file_size
+                chunk_boundaries[bi:] = [file_size] * (len(chunk_boundaries) - bi)
                 break
 
             found_at = mini_chunk.find(split_special_token)
@@ -60,7 +61,7 @@ class GPTPreTokenizer(BytePreTokenizer):
         parts = re.compile(pattern).split(self.chunk) if pattern else [self.chunk]
         pretoken_pattern = re.compile(self.PAT)
         pretoken_freq_table: dict[str, int] = {}
-        for part in parts:
+        for part in tqdm(parts, desc="Pretokenizing", unit="part"):
             for c in pretoken_pattern.finditer(part):
                 pretoken = c.group()
                 pretoken_freq_table[pretoken] = pretoken_freq_table.get(pretoken, 0) + 1

@@ -64,3 +64,28 @@ def test_double_char_edge_case_two():
     reference_vocab = {256: b"<|endoftext|>", 257: b"aa", 258: b"aaaa"}
     assert all(vocab[i] == reference_vocab[i] for i in range(256, 259))
     assert merges == reference_merges
+
+
+def test_pretokenize_chunk_sizes_match(tmp_path):
+    input_path = tmp_path / "repeated_documents.txt"
+    input_path.write_text(
+        "alpha beta gamma <|endoftext|>\n" * 20,
+        encoding="utf-8",
+    )
+
+    small_chunks = TokenizerTrainer(
+        input_path,
+        257,
+        ["<|endoftext|>"],
+        num_processes=2,
+        chunk_size_bytes=64,
+    ).pretokenize()
+    one_chunk = TokenizerTrainer(
+        input_path,
+        257,
+        ["<|endoftext|>"],
+        num_processes=1,
+        chunk_size_bytes=1024 * 1024,
+    ).pretokenize()
+
+    assert small_chunks == one_chunk

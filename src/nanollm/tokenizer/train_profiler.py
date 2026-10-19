@@ -13,7 +13,7 @@ def run_train_bpe(
     vocab_size: int,
     special_tokens: list[str],
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
-    trainer = TokenizerTrainer(input_path, vocab_size, special_tokens, num_processes=16)
+    trainer = TokenizerTrainer(input_path, vocab_size, special_tokens, num_processes=4)
     freq_table = trainer.pretokenize()
     tokenizer = BytePairTokenizer(vocab_size, special_tokens)
     return tokenizer.train(freq_table)
