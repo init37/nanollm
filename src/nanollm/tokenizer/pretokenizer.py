@@ -45,7 +45,10 @@ class BytePreTokenizer(ABC):
     special_tokens: list[str]
 
     @abstractmethod
-    def pre_tokenize(self) -> dict[tuple[bytes, ...], int]: ...
+    def pre_tokenize_train(self) -> dict[tuple[bytes, ...], int]: ...
+
+    @abstractmethod
+    def pre_tokenize(self) -> list[tuple[bytes, ...]]: ...
 
 
 class GPTPreTokenizer(BytePreTokenizer):
@@ -54,7 +57,7 @@ class GPTPreTokenizer(BytePreTokenizer):
         self.special_tokens = special_tokens
         self.PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
-    def pre_tokenize(self) -> dict[tuple[bytes, ...], int]:
+    def pre_tokenize_train(self) -> dict[tuple[bytes, ...], int]:
         pattern = "|".join(
             re.escape(t) for t in sorted(self.special_tokens, key=len, reverse=True)
         )
@@ -69,3 +72,16 @@ class GPTPreTokenizer(BytePreTokenizer):
             tuple(bytes([byte]) for byte in pretoken.encode("utf-8")): frequency
             for pretoken, frequency in pretoken_freq_table.items()
         }
+
+    def pre_tokenize(self) -> list[tuple[bytes, ...]]:
+        pretokenized = []
+        pattern = "|".join(
+            re.escape(t) for t in sorted(self.special_tokens, key=len, reverse=True)
+        )
+        parts = re.compile(pattern).split(self.chunk) if pattern else [self.chunk]
+        pretoken_pattern = re.compile(self.PAT)
+        for part in tqdm(parts, desc="Pretokenizing", unit="part"):
+            for c in pretoken_pattern.finditer(part):
+                pretoken = c.group()
+                pretokenized.append(pretoken)
+        return pretokenized

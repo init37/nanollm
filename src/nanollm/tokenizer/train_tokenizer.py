@@ -6,6 +6,7 @@ from nanollm.tokenizer.pretokenizer import (
     GPTPreTokenizer,
     find_chunk_boundaries,
 )
+from nanollm.tokenizer.tokenizer import BytePairTokenizerTrainer
 
 
 class TokenizerTrainer:
@@ -58,7 +59,12 @@ class TokenizerTrainer:
             f.seek(start)
             chunk = f.read(end - start).decode("utf-8", errors="ignore")
             pretokenizer = GPTPreTokenizer(chunk, special_tokens)
-        return pretokenizer.pre_tokenize()
+        return pretokenizer.pre_tokenize_train()
+
+    def train(self) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+        freq_table = self.pretokenize()
+        tokenizer = BytePairTokenizerTrainer(self.vocab_size, self.special_tokens)
+        return tokenizer.train(freq_table)
 
 
 def _run_pretokenizer_task(
@@ -70,8 +76,6 @@ def _run_pretokenizer_task(
 if __name__ == "__main__":
     import pathlib
     import pickle
-
-    from nanollm.tokenizer.tokenizer import BytePairTokenizer
 
     DATA_PATH = pathlib.Path(__file__).resolve().parent.parent.parent.parent / "data"
     db = "owt_train.txt"
@@ -89,7 +93,7 @@ if __name__ == "__main__":
         chunk_size_bytes=32 * 1024 * 1024,
     )
     freq_table = trainer.pretokenize()
-    tokenizer = BytePairTokenizer(vocab_size, special_tokens)
+    tokenizer = BytePairTokenizerTrainer(vocab_size, special_tokens)
     vocab, merges = tokenizer.train(freq_table)
 
     vocab_cache = cache_path / (db.split(".")[0] + "_vocab" + ".pkl")

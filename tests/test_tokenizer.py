@@ -1,6 +1,6 @@
 from common import DATA_PATH
 
-from nanollm.tokenizer.tokenizer import BytePairTokenizer
+from nanollm.tokenizer.tokenizer import BytePairTokenizerTrainer
 from nanollm.tokenizer.train_tokenizer import TokenizerTrainer
 
 
@@ -9,7 +9,7 @@ def test_merge():
         DATA_PATH / "test_corpus.txt", 257 + 6, ["<|endoftext|>"]
     )
     freq_table = trainer.pretokenize()
-    tokenizer = BytePairTokenizer(257 + 6, ["<|endoftext|>"])
+    tokenizer = BytePairTokenizerTrainer(257 + 6, ["<|endoftext|>"])
     vocab, merges = tokenizer.train(freq_table)
     reference_merges = [
         (b"s", b"t"),
@@ -40,7 +40,7 @@ def test_double_char_edge_case():
         DATA_PATH / "double_char_edge_case.txt", 257 + 1, ["<|endoftext|>"]
     )
     freq_table = trainer.pretokenize()
-    tokenizer = BytePairTokenizer(257 + 1, ["<|endoftext|>"])
+    tokenizer = BytePairTokenizerTrainer(257 + 1, ["<|endoftext|>"])
     vocab, merges = tokenizer.train(freq_table)
     reference_merges = [
         (b"a", b"a"),
@@ -55,7 +55,7 @@ def test_double_char_edge_case_two():
         DATA_PATH / "double_char_edge_case.txt", 257 + 2, ["<|endoftext|>"]
     )
     freq_table = trainer.pretokenize()
-    tokenizer = BytePairTokenizer(257 + 2, ["<|endoftext|>"])
+    tokenizer = BytePairTokenizerTrainer(257 + 2, ["<|endoftext|>"])
     vocab, merges = tokenizer.train(freq_table)
     reference_merges = [
         (b"a", b"a"),

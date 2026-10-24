@@ -1,12 +1,15 @@
 import heapq
+import pickle
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator
+from pathlib import Path
 
 from tqdm import tqdm
 
 from nanollm.tokenizer.reverse_pair import ReversePair
 
 
-class ByteTokenizer(ABC):
+class ByteTokenizerTrainer(ABC):
     vocab_size: int
     special_tokens: list[str]
 
@@ -16,7 +19,47 @@ class ByteTokenizer(ABC):
     ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]: ...
 
 
-class BytePairTokenizer(ByteTokenizer):
+class BytePairTokenizer(ABC):
+    vocab: dict[int, bytes]
+    merges: list[tuple[bytes, bytes]]
+    special_tokens: list[str] | None = None
+
+    @classmethod
+    @abstractmethod
+    def from_files(
+        cls, vocab_filepath: Path, merges_filepath: Path, special_tokens: list[str]
+    ) -> BytePairTokenizer: ...
+    @abstractmethod
+    def encode(self, text: str) -> list[int]: ...
+    @abstractmethod
+    def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]: ...
+    @abstractmethod
+    def decode(self, ids: list[int]) -> str: ...
+
+
+class Tokenizer(BytePairTokenizer):
+    def __init__(
+        self,
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str],
+    ) -> None:
+        self.vocab = vocab
+        self.merges = merges
+        self.special_tokens = special_tokens
+
+    @classmethod
+    def from_files(
+        cls, vocab_filepath: Path, merges_filepath: Path, special_tokens: list[str]
+    ) -> Tokenizer:
+        with open(vocab_filepath, "rb") as f:
+            vocab = pickle.load(f)
+        with open(merges_filepath, "rb") as f:
+            merges = pickle.load(f)
+        return cls(vocab, merges, special_tokens)
+
+
+class BytePairTokenizerTrainer(ByteTokenizerTrainer):
     def __init__(self, vocab_size: int, special_tokens: list[str]) -> None:
         self.vocab_size = vocab_size
         self.vocab = {i: bytes([i]) for i in range(256)}
