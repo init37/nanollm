@@ -42,7 +42,7 @@ def find_chunk_boundaries(
 
 class BytePreTokenizer(ABC):
     chunk: str
-    special_tokens: list[str]
+    special_tokens: list[bytes] | None
 
     @abstractmethod
     def pre_tokenize_train(self) -> dict[tuple[bytes, ...], int]: ...
@@ -52,16 +52,20 @@ class BytePreTokenizer(ABC):
 
 
 class GPTPreTokenizer(BytePreTokenizer):
-    def __init__(self, chunk: str, special_tokens: list[str]) -> None:
+    def __init__(self, chunk: str, special_tokens: list[bytes] | None = None) -> None:
         self.chunk = chunk
         self.special_tokens = special_tokens
         self.PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
     def pre_tokenize_train(self) -> dict[tuple[bytes, ...], int]:
-        pattern = "|".join(
-            re.escape(t) for t in sorted(self.special_tokens, key=len, reverse=True)
-        )
-        parts = re.compile(pattern).split(self.chunk) if pattern else [self.chunk]
+        if self.special_tokens:
+            pattern = "|".join(
+                re.escape(t.decode("utf-8"))
+                for t in sorted(self.special_tokens, key=len, reverse=True)
+            )
+            parts = re.compile(pattern).split(self.chunk) if pattern else [self.chunk]
+        else:
+            parts = [self.chunk]
         pretoken_pattern = re.compile(self.PAT)
         pretoken_freq_table: dict[str, int] = {}
         for part in tqdm(parts, desc="Pretokenizing", unit="part"):
@@ -75,13 +79,27 @@ class GPTPreTokenizer(BytePreTokenizer):
 
     def pre_tokenize(self) -> list[tuple[bytes, ...]]:
         pretokenized = []
-        pattern = "|".join(
-            re.escape(t) for t in sorted(self.special_tokens, key=len, reverse=True)
-        )
-        parts = re.compile(pattern).split(self.chunk) if pattern else [self.chunk]
+        if self.special_tokens:
+            pattern = "|".join(
+                re.escape(t.decode("utf-8"))
+                for t in sorted(self.special_tokens, key=len, reverse=True)
+            )
+            parts = (
+                re.compile(f"({pattern})").split(self.chunk)
+                if pattern
+                else [self.chunk]
+            )
+        else:
+            parts = [self.chunk]
         pretoken_pattern = re.compile(self.PAT)
         for part in tqdm(parts, desc="Pretokenizing", unit="part"):
-            for c in pretoken_pattern.finditer(part):
-                pretoken = c.group()
-                pretokenized.append(pretoken)
+            part_bytes = part.encode("utf-8")
+            if self.special_tokens and part_bytes in self.special_tokens:
+                pretokenized.append((part_bytes,))
+            else:
+                for c in pretoken_pattern.finditer(part):
+                    pretoken = c.group()
+                    pretokenized.append(
+                        tuple(bytes([byte]) for byte in pretoken.encode("utf-8"))
+                    )
         return pretokenized

@@ -12,7 +12,7 @@ def main():
     trainer = TokenizerTrainer(
         input_path=input_path,
         vocab_size=500,
-        special_tokens=["<|endoftext|>"],
+        special_tokens=[b"<|endoftext|>"],
     )
     profiler.enable()
     trainer.train()

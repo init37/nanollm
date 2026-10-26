@@ -9,7 +9,7 @@ def test_train_bpe_speed():
     input_path = DATA_PATH / "corpus.en"
     start_time = time.time()
     _, _ = run_train_bpe(
-        input_path=input_path, vocab_size=500, special_tokens=["<|endoftext|>"]
+        input_path=input_path, vocab_size=500, special_tokens=[b"<|endoftext|>"]
     )
     end_time = time.time()
     assert end_time - start_time < 1.5
@@ -20,7 +20,7 @@ def test_train_bpe():
     vocab, merges = run_train_bpe(
         input_path=input_path,
         vocab_size=500,
-        special_tokens=["<|endoftext|>"],
+        special_tokens=[b"<|endoftext|>"],
     )
     reference_vocab_path = DATA_PATH / "reference" / "train-bpe-reference-vocab.json"
     reference_merges_path = DATA_PATH / "reference" / "train-bpe-reference-merges.txt"
@@ -61,7 +61,7 @@ def test_train_bpe_special_tokens(snapshot):
     vocab, merges = run_train_bpe(
         input_path=input_path,
         vocab_size=1000,
-        special_tokens=["<|endoftext|>"],
+        special_tokens=[b"<|endoftext|>"],
     )
 
     # Check that the special token is not in the vocab

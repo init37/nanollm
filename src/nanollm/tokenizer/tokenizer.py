@@ -2,16 +2,18 @@ import heapq
 import pickle
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
+from multiprocessing import Pool
 from pathlib import Path
 
 from tqdm import tqdm
 
+from nanollm.tokenizer.pretokenizer import GPTPreTokenizer
 from nanollm.tokenizer.reverse_pair import ReversePair
 
 
 class ByteTokenizerTrainer(ABC):
     vocab_size: int
-    special_tokens: list[str]
+    special_tokens: list[bytes]
 
     @abstractmethod
     def train(
@@ -22,12 +24,12 @@ class ByteTokenizerTrainer(ABC):
 class BytePairTokenizer(ABC):
     vocab: dict[int, bytes]
     merges: list[tuple[bytes, bytes]]
-    special_tokens: list[str] | None = None
+    special_tokens: list[bytes] | None = None
 
     @classmethod
     @abstractmethod
     def from_files(
-        cls, vocab_filepath: Path, merges_filepath: Path, special_tokens: list[str]
+        cls, vocab_filepath: Path, merges_filepath: Path, special_tokens: list[bytes]
     ) -> BytePairTokenizer: ...
     @abstractmethod
     def encode(self, text: str) -> list[int]: ...
@@ -42,30 +44,109 @@ class Tokenizer(BytePairTokenizer):
         self,
         vocab: dict[int, bytes],
         merges: list[tuple[bytes, bytes]],
-        special_tokens: list[str],
+        special_tokens: list[bytes] | None = None,
+        num_workers: int = 1,
     ) -> None:
         self.vocab = vocab
+        self.bacov = {b: key for key, b in self.vocab.items()}
         self.merges = merges
         self.special_tokens = special_tokens
+        self.num_workers = num_workers
+        self.merge_ranks = {pair: rank for rank, pair in enumerate(self.merges)}
 
     @classmethod
     def from_files(
-        cls, vocab_filepath: Path, merges_filepath: Path, special_tokens: list[str]
+        cls,
+        vocab_filepath: Path,
+        merges_filepath: Path,
+        special_tokens: list[bytes],
+        num_workers: int = 1,
     ) -> Tokenizer:
         with open(vocab_filepath, "rb") as f:
             vocab = pickle.load(f)
         with open(merges_filepath, "rb") as f:
             merges = pickle.load(f)
-        return cls(vocab, merges, special_tokens)
+        return cls(vocab, merges, special_tokens, num_workers)
+
+    def encode(self, text: str) -> list[int]:
+        pretokenizer = GPTPreTokenizer(text, self.special_tokens)
+        pretokenized = pretokenizer.pre_tokenize()
+        with Pool(self.num_workers) as pool:
+            encoded = [
+                token
+                for tokens in pool.imap(self.merge, pretokenized)
+                for token in tokens
+            ]
+        return encoded
+
+    def merge(self, pretoken: tuple[bytes, ...]) -> list[int]:
+        token = list(pretoken)
+        alive = [True] * len(token)
+        n = len(token)
+        nxt = list(range(1, n + 1))
+        prv = list(range(-1, n - 1))
+        priority_q = []
+
+        for left in range(n - 1):
+            pair = (token[left], token[left + 1])
+            if pair in self.merge_ranks:
+                heapq.heappush(priority_q, (self.merge_ranks[pair], left, pair))
+
+        while priority_q:
+            _, idx, pair = heapq.heappop(priority_q)
+
+            if not alive[idx]:
+                continue
+            right = nxt[idx]
+            if right >= n or (token[idx], token[right]) != pair:
+                continue
+
+            token[idx] += token[right]
+            alive[right] = False
+            nxt[idx] = nxt[right]
+            if nxt[right] < n:
+                prv[nxt[right]] = idx
+            if prv[idx] >= 0:
+                left_pair = (token[prv[idx]], token[idx])
+                if left_pair in self.merge_ranks:
+                    heapq.heappush(
+                        priority_q,
+                        (self.merge_ranks[left_pair], prv[idx], left_pair),
+                    )
+            if nxt[idx] < n:
+                right_pair = (token[idx], token[nxt[idx]])
+                if right_pair in self.merge_ranks:
+                    heapq.heappush(
+                        priority_q,
+                        (self.merge_ranks[right_pair], idx, right_pair),
+                    )
+        final_token = []
+        for i, t in enumerate(token):
+            if not alive[i]:
+                continue
+            try:
+                final_token.append(self.bacov[t])
+            except KeyError:
+                raise KeyError(
+                    f"Token {t!r} (hex: {t.hex()}) not found in vocabulary."
+                ) from None
+
+        return final_token
+
+    def decode(self, ids: list[int]) -> str:
+        return ""
+
+    def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
+        return iter([1, 2, 3])
 
 
 class BytePairTokenizerTrainer(ByteTokenizerTrainer):
-    def __init__(self, vocab_size: int, special_tokens: list[str]) -> None:
+    def __init__(self, vocab_size: int, special_tokens: list[bytes]) -> None:
         self.vocab_size = vocab_size
         self.vocab = {i: bytes([i]) for i in range(256)}
         self.special_tokens = special_tokens
         for i, special_token in enumerate(special_tokens):
-            self.vocab[256 + i] = special_token.encode("utf-8")
+            self.vocab[256 + i] = special_token
 
     def train(
         self, freq_table: dict[tuple[bytes, ...], int]
