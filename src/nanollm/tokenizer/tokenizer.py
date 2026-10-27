@@ -2,7 +2,6 @@ import heapq
 import pickle
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
-from multiprocessing import Pool
 from pathlib import Path
 
 from tqdm import tqdm
@@ -53,6 +52,7 @@ class Tokenizer(BytePairTokenizer):
         self.special_tokens = special_tokens
         self.num_workers = num_workers
         self.merge_ranks = {pair: rank for rank, pair in enumerate(self.merges)}
+        self.cache: dict[tuple[bytes, ...], list[int]] = {}
 
     @classmethod
     def from_files(
@@ -71,13 +71,14 @@ class Tokenizer(BytePairTokenizer):
     def encode(self, text: str) -> list[int]:
         pretokenizer = GPTPreTokenizer(text, self.special_tokens)
         pretokenized = pretokenizer.pre_tokenize()
-        with Pool(self.num_workers) as pool:
-            encoded = [
-                token
-                for tokens in pool.imap(self.merge, pretokenized)
-                for token in tokens
-            ]
-        return encoded
+        out = []
+        for p in pretokenized:
+            ids = self.cache.get(p)
+            if ids is None:
+                ids = self.merge(p)
+                self.cache[p] = ids
+            out.extend(ids)
+        return out
 
     def merge(self, pretoken: tuple[bytes, ...]) -> list[int]:
         token = list(pretoken)
@@ -134,10 +135,13 @@ class Tokenizer(BytePairTokenizer):
         return final_token
 
     def decode(self, ids: list[int]) -> str:
-        return ""
+        replacement = "�".encode()
+        data = b"".join(self.vocab.get(i, replacement) for i in ids)
+        return data.decode("utf-8", errors="replace")
 
     def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
-        return iter([1, 2, 3])
+        for text in iterable:
+            yield from self.encode(text)
 
 
 class BytePairTokenizerTrainer(ByteTokenizerTrainer):
